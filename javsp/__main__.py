@@ -419,6 +419,12 @@ def process_poster(movie: Movie):
             fanart_cropped = add_label_to_poster(fanart_cropped, SUBTITLE_MARK_FILE, LabelPostion.BOTTOM_RIGHT)
         if movie.uncensored:
             fanart_cropped = add_label_to_poster(fanart_cropped, UNCENSORED_MARK_FILE, LabelPostion.BOTTOM_LEFT)
+
+    # 在保存前检查目标路径是否为目录，如果是则删除
+    import shutil
+    if os.path.exists(movie.poster_file) and os.path.isdir(movie.poster_file):
+        shutil.rmtree(movie.poster_file)  # 删除整个目录树
+
     fanart_cropped.save(movie.poster_file)
 
 def RunNormalMode(all_movies):

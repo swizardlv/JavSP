@@ -15,6 +15,16 @@ def get_id(filepath_str: str) -> str:
     # 通常是接收文件的路径，当然如果是普通字符串也可以
     ignore_pattern = re.compile('|'.join(Cfg().scanner.ignored_id_pattern))
     norm = ignore_pattern.sub('', filepath.stem).upper()
+
+    # 处理特殊格式: 网站@番号_分集_分辨率.扩展名 (如 4k2.com@sivr00441_1_8k.mp4)
+    # 移除网站前缀和@符号
+    if '@' in norm:
+        norm = norm.split('@', 1)[1]
+    # 将番号中的00替换为-（如 sivr00441 -> sivr-441）
+    # 但要保留分集和分辨率信息在后面处理
+    match = re.match(r'^([A-Z]+)00(\d+)(?:_.*)?$', norm, re.I)
+    if match:
+        norm = match.group(1) + '-' + match.group(2)
     if 'FC2' in norm:
         # 根据FC2 Club的影片数据，FC2编号为5-7个数字
         match = re.search(r'FC2[^A-Z\d]{0,5}(PPV[^A-Z\d]{0,5})?(\d{5,7})', norm, re.I)
