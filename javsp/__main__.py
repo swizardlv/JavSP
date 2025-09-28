@@ -4,6 +4,7 @@ import sys
 import json
 import time
 import logging
+from sys import platform
 from PIL import Image
 from pydantic import ValidationError
 from pydantic_extra_types.pendulum_dt import Duration
@@ -426,6 +427,52 @@ def process_poster(movie: Movie):
         shutil.rmtree(movie.poster_file)  # 删除整个目录树
 
     fanart_cropped.save(movie.poster_file)
+
+    # 生成文件夹缩略图 (folder.jpg) - 根据配置决定是否生成
+    if Cfg().summarizer.cover.create_folder_thumbnail:
+        # 这个缩略图会被 Windows/macOS 等系统用作文件夹图标
+        folder_dir = os.path.dirname(movie.poster_file)
+        folder_thumb_path = os.path.join(folder_dir, 'folder.jpg')
+
+        # 从配置读取缩略图大小
+        thumb_width, thumb_height = Cfg().summarizer.cover.folder_thumbnail_size
+        thumb_size = (thumb_width, thumb_height)
+
+        # 创建缩略图
+        folder_thumb = fanart_cropped.copy()
+        folder_thumb.thumbnail(thumb_size, Image.Resampling.LANCZOS)
+
+        # 检查并删除已存在的文件夹封面
+        if os.path.exists(folder_thumb_path) and os.path.isdir(folder_thumb_path):
+            shutil.rmtree(folder_thumb_path)
+
+        # 保存文件夹缩略图
+        folder_thumb.save(folder_thumb_path, 'JPEG', quality=85, optimize=True)
+        logger.debug(f'已生成文件夹封面: {folder_thumb_path}')
+
+        # 为 Windows 生成 desktop.ini 文件，使文件夹显示自定义图标
+        if platform == 'win32':
+            desktop_ini_path = os.path.join(folder_dir, 'desktop.ini')
+            desktop_ini_content = """[.ShellClassInfo]
+IconResource=folder.jpg,0
+[ViewState]
+Mode=
+Vid=
+FolderType=Pictures
+"""
+            # 写入 desktop.ini 文件
+            with open(desktop_ini_path, 'w', encoding='utf-8') as f:
+                f.write(desktop_ini_content)
+
+            # 设置文件和文件夹属性（隐藏 desktop.ini，设置文件夹为系统文件夹）
+            import ctypes
+            FILE_ATTRIBUTE_HIDDEN = 0x02
+            FILE_ATTRIBUTE_SYSTEM = 0x04
+            # 隐藏 desktop.ini
+            ctypes.windll.kernel32.SetFileAttributesW(desktop_ini_path, FILE_ATTRIBUTE_HIDDEN)
+            # 设置文件夹为系统文件夹（这样 Windows 会读取 desktop.ini）
+            folder_attrs = ctypes.windll.kernel32.GetFileAttributesW(folder_dir)
+            ctypes.windll.kernel32.SetFileAttributesW(folder_dir, folder_attrs | FILE_ATTRIBUTE_SYSTEM)
 
 def RunNormalMode(all_movies):
     """普通整理模式"""

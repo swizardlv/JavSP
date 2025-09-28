@@ -119,8 +119,12 @@ summarizer:
     basename_pattern: "poster"
     # 尽可能下载高清封面？（高清封面大小约 8-10 MiB，远大于普通封面，如果你的网络条件不佳，会降低整理速度）
     highres: true
-    # 在封面图上添加水印（标签），例如“字幕”
+    # 在封面图上添加水印（标签），例如"字幕"
     add_label: false
+    # 生成文件夹缩略图 (folder.jpg)，用作文件夹封面图标
+    create_folder_thumbnail: true
+    # 文件夹缩略图的大小 (宽x高)
+    folder_thumbnail_size: [300, 450]
     crop:
       # 要使用图像识别来裁剪的番号系列需要匹配的正则表达式
       on_id_pattern:
